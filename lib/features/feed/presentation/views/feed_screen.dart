@@ -52,6 +52,12 @@ class FeedScreen extends StatelessWidget {
         final hasUnread = authData.unreadNotifs;
         final profilePicUrl = authData.user?.profilePicUrl ?? '';
 
+        if (currentUserId.isNotEmpty && postProvider.activeUid != currentUserId) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            postProvider.bindUserFeed(currentUserId);
+          });
+        }
+
         return Scaffold(
           appBar: AppBar(
             titleSpacing: 20,
