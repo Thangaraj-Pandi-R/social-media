@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User Profiles
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Allow user to update their own profile, OR allow other users to update ONLY the followers list to follow/unfollow
+      allow update: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers'])
+      );
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Posts
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+      // Allow post author to update anything, OR allow any authenticated user to update ONLY likes and commentCount
+      allow update: if request.auth != null && (
+        resource.data.authorId == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentCount'])
+      );
+      allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    }
+
+    // Comments
+    match /comments/{commentId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+      // Allow comment author to update/delete their own comment
+      allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    }
+  }
+}
